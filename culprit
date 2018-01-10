@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+
+
+ARGV.map{ |x| x.split("=") }.each do |key, value|
+  ## --author=someone
+  ## --month=...
+  ## --year=...
+  ## [if no prefix found, it is keyword]
+  case key
+  when "--author"
+    @author = value
+  when "--month"  
+    @month = value
+  else  
+    @keyword = "| grep #{key}"
+  end
+end
+
+`git fetch --all`
+
+branches = `git branch -a #{@keyword}`.lines
+
+branches.each do |branch|
+  logs = `git log -1 --author=#{@author} #{branch}`
+    .lines
+    .select{|line| line =~ /^Date:/ }
+    .uniq
+  if @month
+    logs = logs.select{|line| line =~ /\s#{@month}\s/}
+  end
+  if logs.first
+    puts "#{branch.strip.chomp} "
+    puts logs.first
+    puts 
+  end  
+end
